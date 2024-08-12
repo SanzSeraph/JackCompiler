@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import Tokenizer from './tokenizer.js';
 
 let fileOrFolder = process.argv[2];
 let stat = await fs.stat(fileOrFolder);
@@ -16,3 +17,12 @@ if (stat.isDirectory()) {
     inputFiles.push(fileOrFolder);
 }
 
+let tokenizer = new Tokenizer();
+
+for (fileName of inputFiles) {
+    let inputFile = await fs.open(fileName, 'r');
+    let contents = await inputFile.read()
+    
+    let tokens = tokenizer.tokenize(contents);
+
+}

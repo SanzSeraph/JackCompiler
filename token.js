@@ -1,6 +1,6 @@
 export default class Token {
-    static symbols = [ '(', ')', '{', '}', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~'];
-    static keywords = [
+    static symbol = [ '(', ')', '{', '}', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', '|', '<', '>', '=', '~'];
+    static keyword = [
         'class',
         'constructor',
         'function',
@@ -23,6 +23,38 @@ export default class Token {
         'while',
         'return'
     ];
+    static identifier = /[A-Za-z_]+[A-Za-z1-9_]*/;
+    static intconst = /[\d]*/;
+    static intmax = 32767;
+    static intmin = 0;
+
+    static match(str) {
+        if (Token.symbol.includes(str)) {
+            return true;
+        }
+
+        if (Token.keyword.includes(str)) {
+            return true;
+        }
+
+        if (str.match(Token.identifier) != null) {
+            return true;
+        }
+
+        if (str.match(Token.intconst) != null) {
+            let val = parseInt(str);
+
+            if (val > Token.intMax) {
+                return false;
+            }
+
+            if (val < Token.intmin) {
+                return false;
+            }
+        }
+
+        return false;
+    }
 
     constructor(line, column, value) {
         this.line = line;
