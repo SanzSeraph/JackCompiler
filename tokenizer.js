@@ -10,6 +10,7 @@ export default class Tokenizer {
         let context = {
             currentTokenString: '',
             inString: false,
+            inComment: false,
             currentLine: 0,
             currentColumn: 0,
             tokens: [],
@@ -25,7 +26,7 @@ export default class Tokenizer {
         for (i = 0; i < contents.length; i++) {
             context.currentColmn = i;
 
-            let currentChar = this._contents[i];
+            let currentChar = contents[i];
             let skipNext = this.parseCurrentChar(context, currentChar);
 
             if (skipNext) {
@@ -35,6 +36,14 @@ export default class Tokenizer {
 
         if (context.currentTokenString.length > 0) {
             context.tokens.push(new Token)
+        }
+
+        if (context.errors.length) {
+            for (const error in errors) {
+                console.log(`${error.line}, ${error.column}, ${error.message}`);
+            }
+        } else {
+            return context.tokens;
         }
     }
 
@@ -62,7 +71,7 @@ export default class Tokenizer {
 
                     return true;
                 }
-            } else if (Token.symbols.includes(currentChar)) {
+            } else if (Token.symbol.includes(currentChar)) {
                 if (currentToken.length > 0) {
                     context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
                 }

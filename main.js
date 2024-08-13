@@ -19,10 +19,16 @@ if (stat.isDirectory()) {
 
 let tokenizer = new Tokenizer();
 
-for (fileName of inputFiles) {
+for (const fileName of inputFiles) {
     let inputFile = await fs.open(fileName, 'r');
-    let contents = await inputFile.read()
+    let contents = await inputFile.readFile({ encoding: 'utf-8'});
     
     let tokens = tokenizer.tokenize(contents);
+    let pathParts = path.parse(fileName);
 
+    let outputFile = path.join(pathParts.base, pathParts.name + '.tokens');
+
+    fs.writeFile(outputFile, tokens, {
+        mode: 'c'
+    });
 }
