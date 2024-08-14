@@ -9,5 +9,8 @@
   },
   "type": "module",
   "author": "Daniel Arant",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "json-format": "^1.0.1"
+  }
 }

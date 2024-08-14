@@ -11,6 +11,7 @@ export default class Tokenizer {
             currentTokenString: '',
             inString: false,
             inComment: false,
+            inSingleLineComment: false,
             currentLine: 0,
             currentColumn: 0,
             tokens: [],
@@ -24,10 +25,10 @@ export default class Tokenizer {
         }
 
         for (i = 0; i < contents.length; i++) {
-            context.currentColmn = i;
+            context.currentColumn += i;
 
             let currentChar = contents[i];
-            let skipNext = this.parseCurrentChar(context, currentChar);
+            let skipNext = this. parseCurrentChar(context, currentChar);
 
             if (skipNext) {
                 i++;
@@ -39,7 +40,7 @@ export default class Tokenizer {
         }
 
         if (context.errors.length) {
-            for (const error in errors) {
+            for (const error in context.errors) {
                 console.log(`${error.line}, ${error.column}, ${error.message}`);
             }
         } else {
@@ -48,31 +49,51 @@ export default class Tokenizer {
     }
 
     parseCurrentChar(context, currentChar) {
+        let skipNext = false;
+
         if (context.inString) {
             if (currentChar == '"') {
                 context.currentTokenString += '"';
                 context.inString = false;
                 
                 context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
-            } else if (currentChar.match(/[\n\r\f]/)) {
+            } else if (currentChar.match(/[\n\r]/)) {
                 context.errors.push(new ParseError(context.currentLine, context.currentColumn, 'Illegal new line character in string constant.'));
             } else {
                 context.curentTokenString += currentChar;
             }
+        } else if (context.inComment) {
+            if (currentChar == '*' && context.peek() == '/') {
+                context.inComment = false;
+
+                skipNext = true;
+            }
+        } else if (context.inSingleLineComment) {
+            if (currentChar == '\n') {
+                context.inSingleLineComment = false;
+            } else if (currentChar == '\r' && context.peek() == '\n') {
+                context.inSingleLineComment = false;
+
+                skipNext = true;
+            }
         } else {
-            if (currentChar.match(/[\s]/) != null) {
+            if (currentChar == '/' && context.peek() == '/') {
+                context.inSingleLineComment = true;
+
+                skipNext = true;
+            } else if (currentChar == '/' && context.peek() == '*') {
+                context.inComment = true;
+
+                skipNext = true;
+            } else if (currentChar.match(/[\s]/) != null) {
                 if (context.currentTokenString.length > 0) {
-                    context.tokens.push(new Token(context.currentLine, context.currentColumn, currentTokenString));
+                    context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
                     context.currentTokenString = '';
                 }
 
-                if (currentChar == '\n' || currentChar == '\r' && context.peek() == '\f') {
-                    context.currentLine++;
-
-                    return true;
-                }
+                
             } else if (Token.symbol.includes(currentChar)) {
-                if (currentToken.length > 0) {
+                if (context.currentTokenString.length > 0) {
                     context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
                 }
 
@@ -90,10 +111,19 @@ export default class Tokenizer {
                 
                 context.currentTokenString = '"';
                 context.inString = true;
-                inString = false;
-            } else {
+            }
+            else {
                 context.currentTokenString += currentChar;
             }
         }
+
+        if (currentChar == '\n' || currentChar == '\r' && context.peek() == '\n') {
+            context.currentLine++;
+            context.currentColumn = 0;
+
+            skipNext = true;
+        }
+
+        return skipNext;
     }
 }
