@@ -25,7 +25,7 @@ export default class Tokenizer {
         }
 
         for (i = 0; i < contents.length; i++) {
-            context.currentColumn += i;
+            context.currentColumn += 1;
 
             let currentChar = contents[i];
             let skipNext = this. parseCurrentChar(context, currentChar);
@@ -90,8 +90,6 @@ export default class Tokenizer {
                     context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
                     context.currentTokenString = '';
                 }
-
-                
             } else if (Token.symbol.includes(currentChar)) {
                 if (context.currentTokenString.length > 0) {
                     context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
