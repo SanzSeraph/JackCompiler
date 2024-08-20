@@ -11,6 +11,7 @@
   "author": "Daniel Arant",
   "license": "ISC",
   "dependencies": {
-    "json-format": "^1.0.1"
+    "json-format": "^1.0.1",
+    "xml-writer": "^1.7.0"
   }
 }

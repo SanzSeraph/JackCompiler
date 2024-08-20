@@ -28,7 +28,7 @@ for (const fileName of inputFiles) {
     let tokens = tokenizer.tokenize(contents);
     let pathParts = path.parse(fileName);
 
-    let outputFile = path.join(pathParts.name + '.tokens');
+    let outputFile = path.join(pathParts.dir, pathParts.name + '.tokens');
 
     await fs.writeFile(outputFile, jsonFormat(tokens));
 

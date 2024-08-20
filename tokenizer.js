@@ -2,122 +2,118 @@ import Token, { TokenType } from "./token.js";
 import ParseError from './parse-error.js';
 
 export default class Tokenizer {
-    constructor() {
-        
+    constructor(contents) {
+        this.contents = contents;
+        this.currentTokenString = '';
+        this.inString = false;
+        this.inComment = false;
+        this.inSingleLineComment = false;
+        this.currentLine = 0;
+        this.currentColumn = 0;
+        this.tokens = [];
+        this.errors = [];
+        this.currentIndex = 0;
     }
 
-    tokenize(contents) {
-        let context = {
-            currentTokenString: '',
-            inString: false,
-            inComment: false,
-            inSingleLineComment: false,
-            currentLine: 0,
-            currentColumn: 0,
-            tokens: [],
-            errors: []
-        };
+    peek() {
+        return this.contents[this.currentIndex + 1];
+    }
 
-        let i;
-
-        context.peek = () => {
-            return contents[i + 1];
-        }
-
-        for (i = 0; i < contents.length; i++) {
-            context.currentColumn += 1;
+    tokenize() {
+        for (this.currentIndex; this.currentIndex < this.contents.length; this.currentIndex++) {
+            this.currentColumn += 1;
 
             let currentChar = contents[i];
-            let skipNext = this. parseCurrentChar(context, currentChar);
+            let skipNext = this.parseCurrentChar(currentChar);
 
             if (skipNext) {
-                i++;
+                this.currentIndex++;
             }
         }
 
-        if (context.currentTokenString.length > 0) {
-            context.tokens.push(new Token)
+        if (this.currentTokenString.length > 0) {
+            this.tokens.push(new Token)
         }
 
-        if (context.errors.length) {
-            for (const error in context.errors) {
+        if (this.errors.length) {
+            for (const error in this.errors) {
                 console.log(`${error.line}, ${error.column}, ${error.message}`);
             }
         } else {
-            return context.tokens;
+            return this.tokens;
         }
     }
 
-    parseCurrentChar(context, currentChar) {
+    parseCurrentChar(currentChar) {
         let skipNext = false;
 
-        if (context.inString) {
+        if (this.inString) {
             if (currentChar == '"') {
-                context.currentTokenString += '"';
-                context.inString = false;
+                this.currentTokenString += '"';
+                this.inString = false;
                 
-                context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
+                this.tokens.push(new Token(this.currentLine, this.currentColumn, this.currentTokenString));
             } else if (currentChar.match(/[\n\r]/)) {
-                context.errors.push(new ParseError(context.currentLine, context.currentColumn, 'Illegal new line character in string constant.'));
+                this.errors.push(new ParseError(this.currentLine, this.currentColumn, 'Illegal new line character in string constant.'));
             } else {
-                context.curentTokenString += currentChar;
+                this.curentTokenString += currentChar;
             }
-        } else if (context.inComment) {
-            if (currentChar == '*' && context.peek() == '/') {
-                context.inComment = false;
+        } else if (this.inComment) {
+            if (currentChar == '*' && this.peek() == '/') {
+                this.inComment = false;
 
                 skipNext = true;
             }
-        } else if (context.inSingleLineComment) {
+        } else if (this.inSingleLineComment) {
             if (currentChar == '\n') {
-                context.inSingleLineComment = false;
-            } else if (currentChar == '\r' && context.peek() == '\n') {
-                context.inSingleLineComment = false;
+                this.inSingleLineComment = false;
+            } else if (currentChar == '\r' && this.peek() == '\n') {
+                this.inSingleLineComment = false;
 
                 skipNext = true;
             }
         } else {
-            if (currentChar == '/' && context.peek() == '/') {
-                context.inSingleLineComment = true;
+            if (currentChar == '/' && this.peek() == '/') {
+                this.inSingleLineComment = true;
 
                 skipNext = true;
-            } else if (currentChar == '/' && context.peek() == '*') {
-                context.inComment = true;
+            } else if (currentChar == '/' && this.peek() == '*') {
+                this.inComment = true;
 
                 skipNext = true;
             } else if (currentChar.match(/[\s]/) != null) {
-                if (context.currentTokenString.length > 0) {
-                    context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
-                    context.currentTokenString = '';
+                if (this.currentTokenString.length > 0) {
+                    this.tokens.push(new Token(this.currentLine, this.currentColumn, this.currentTokenString));
+                    this.currentTokenString = '';
                 }
             } else if (Token.symbol.includes(currentChar)) {
-                if (context.currentTokenString.length > 0) {
-                    context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
+                if (this.currentTokenString.length > 0) {
+                    this.tokens.push(new Token(this.currentLine, this.currentColumn, this.currentTokenString));
                 }
 
-                context.currentTokenString = currentChar;
-                context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
-                context.currentTokenString = '';
+                this.currentTokenString = currentChar;
+                this.tokens.push(new Token(this.currentLine, this.currentColumn, this.currentTokenString));
+                this.currentTokenString = '';
             } else if (currentChar == '"') {
-                if (context.currentTokenString.length > 0) {
-                    if (!Token.match(context.currentTokenString)) {
-                        context.errors.push(new ParseError(context.currentLine, context.currentColumn, 'Invalid token'));
+                if (this.currentTokenString.length > 0) {
+                    if (!Token.match(this.currentTokenString)) {
+                        this.errors.push(new ParseError(this.currentLine, this.currentColumn, 'Invalid token'));
                     } else {
-                        context.tokens.push(new Token(context.currentLine, context.currentColumn, context.currentTokenString));
+                        this.tokens.push(new Token(this.currentLine, this.currentColumn, this.currentTokenString));
                     }
                 }
                 
-                context.currentTokenString = '"';
-                context.inString = true;
+                this.currentTokenString = '"';
+                this.inString = true;
             }
             else {
-                context.currentTokenString += currentChar;
+                this.currentTokenString += currentChar;
             }
         }
 
-        if (currentChar == '\n' || currentChar == '\r' && context.peek() == '\n') {
-            context.currentLine++;
-            context.currentColumn = 0;
+        if (currentChar == '\n' || currentChar == '\r' && this.peek() == '\n') {
+            this.currentLine++;
+            this.currentColumn = 0;
 
             skipNext = true;
         }

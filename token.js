@@ -56,10 +56,22 @@ export default class Token {
         return false;
     }
 
-    constructor(line, column, value) {
+    constructor(line, column, value, type) {
         this.line = line;
         this.column = column;
         this.value = value;
+        
+        if (type) {
+            this.type = type;
+        } else if (Token.keyword.includes(value)) {
+            this.type = TokenType.KEYWORD;
+        } else if (Token.symbol.includes(value)) {
+            this.type = TokenType.SYMBOL;
+        } else if (value.match(Token.intconst)) {
+            this.type = TokenType.INT_CONST;
+        } else if (value.match(Token.identifier)) {
+            this.type = TokenType.IDENTIFIER;
+        }
     }
 }
 
