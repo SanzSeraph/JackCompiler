@@ -12,25 +12,35 @@ if (stat.isDirectory()) {
     let dir = await fs.opendir(fileOrFolder);
 
     for await (const dirEnt of dir) {
+        let parts = path.parse(dirEnt.name);
 
-        inputFiles.push(path.join(dirEnt.parentPath, dirEnt.name));
+        if (parts.ext == '.jack') {
+            inputFiles.push(path.join(dirEnt.parentPath, dirEnt.name));
+        }
     }
 } else {
     inputFiles.push(fileOrFolder);
 }
 
-let tokenizer = new Tokenizer();
 
 for (const fileName of inputFiles) {
     let inputFile = await fs.open(fileName, 'r');
     let contents = await inputFile.readFile({ encoding: 'utf-8'});
     
-    let tokens = tokenizer.tokenize(contents);
-    let pathParts = path.parse(fileName);
+    let tokenizer = new Tokenizer(fileName, contents);
 
-    let outputFile = path.join(pathParts.dir, pathParts.name + '.tokens');
+    if (tokenizer.errors.length) {
+        for (const error of tokenizer.errors) {
+            console.log(`${error.fileName}, ${error.lineNumber}, ${error.columnNumber} ${error.message}`);
+        }
+    } else {
+        let pathParts = path.parse(fileName);
 
-    await fs.writeFile(outputFile, jsonFormat(tokens));
-
+        let outputFile = path.join(pathParts.dir, pathParts.name + '.tokens');
+    
+        await fs.writeFile(outputFile, jsonFormat(tokenizer.tokens));
+    
+    }
+    
     inputFile.close();
 }

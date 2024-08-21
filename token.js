@@ -24,7 +24,7 @@ export default class Token {
         'return'
     ];
     static identifier = /[A-Za-z_]+[A-Za-z1-9_]*/;
-    static intconst = /[\d]*/;
+    static intconst = /[\d]+/;
     static intmax = 32767;
     static intmin = 0;
 

@@ -2,7 +2,8 @@ import Token, { TokenType } from "./token.js";
 import ParseError from './parse-error.js';
 
 export default class Tokenizer {
-    constructor(contents) {
+    constructor(fileName, contents) {
+        this.fileName = fileName;
         this.contents = contents;
         this.currentTokenString = '';
         this.inString = false;
@@ -13,6 +14,8 @@ export default class Tokenizer {
         this.tokens = [];
         this.errors = [];
         this.currentIndex = 0;
+
+        this.tokenize();
     }
 
     peek() {
@@ -23,24 +26,12 @@ export default class Tokenizer {
         for (this.currentIndex; this.currentIndex < this.contents.length; this.currentIndex++) {
             this.currentColumn += 1;
 
-            let currentChar = contents[i];
+            let currentChar = this.contents[this.currentIndex];
             let skipNext = this.parseCurrentChar(currentChar);
 
             if (skipNext) {
                 this.currentIndex++;
             }
-        }
-
-        if (this.currentTokenString.length > 0) {
-            this.tokens.push(new Token)
-        }
-
-        if (this.errors.length) {
-            for (const error in this.errors) {
-                console.log(`${error.line}, ${error.column}, ${error.message}`);
-            }
-        } else {
-            return this.tokens;
         }
     }
 
@@ -52,9 +43,9 @@ export default class Tokenizer {
                 this.currentTokenString += '"';
                 this.inString = false;
                 
-                this.tokens.push(new Token(this.currentLine, this.currentColumn, this.currentTokenString));
+                this.tokens.push(new Token(this.currentLine, this.currentColumn, this.currentTokenString, TokenType.STRING_CONST));
             } else if (currentChar.match(/[\n\r]/)) {
-                this.errors.push(new ParseError(this.currentLine, this.currentColumn, 'Illegal new line character in string constant.'));
+                this.errors.push(new ParseError(this.fileName, this.currentLine, this.currentColumn, 'Illegal new line character in string constant.'));
             } else {
                 this.curentTokenString += currentChar;
             }
@@ -97,7 +88,7 @@ export default class Tokenizer {
             } else if (currentChar == '"') {
                 if (this.currentTokenString.length > 0) {
                     if (!Token.match(this.currentTokenString)) {
-                        this.errors.push(new ParseError(this.currentLine, this.currentColumn, 'Invalid token'));
+                        this.errors.push(new ParseError(this.fileName, this.currentLine, this.currentColumn, 'Invalid token'));
                     } else {
                         this.tokens.push(new Token(this.currentLine, this.currentColumn, this.currentTokenString));
                     }
