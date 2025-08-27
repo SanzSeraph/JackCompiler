@@ -1,14 +1,17 @@
-#include "xml-parser/dynamic_array.h"
+#include "lib/dynamic_array.h"
+#include "xml-parser/attribute_collection.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
 
 bool testDynamicArray(void);
+bool testAttributeCollection(void);
 
 int main(int argc, char *argv[])
 {
     bool success = testDynamicArray();
+    success = success && testAttributeCollection();
     
     if (success) {
         return 0;
@@ -73,6 +76,50 @@ bool testDynamicArray(void) {
     DynamicArray_free(da);
 
     puts("DynamicArray tests passed successfully!");
+
+    return true;
+}
+
+bool testAttributeCollection(void) {
+    puts("Testing AttributeCollection");
+
+    struct AttributeCollection *ac = AttributeCollection_new();
+    assert(ac != NULL);
+
+    enum AttributeCollectionErrorCode code = AttributeCollection_set(ac, "name", "Caitlyn");
+
+    assert(code == ATTRIBUTE_COLLECTION_SUCCESS);
+
+    struct Attribute *attr = AttributeCollection_get(ac, "name");
+
+    assert(attr != NULL);
+    assert(strncmp(attr->value, "Caitlyn", 100) == 0);
+
+    code = AttributeCollection_set(ac, "age", "29");
+
+    assert(code == ATTRIBUTE_COLLECTION_SUCCESS);
+
+    attr = AttributeCollection_get(ac, "age");
+
+    assert(attr != NULL);
+    assert(strncmp(attr->value, "29", 100) == 0);
+
+    attr = AttributeCollection_get(ac, "nonexistent");
+
+    assert(attr == NULL);
+
+    code = AttributeCollection_set(ac, "name", "Not Caitlyn");
+
+    assert(code == ATTRIBUTE_COLLECTION_SUCCESS);
+
+    attr = AttributeCollection_get(ac, "name");
+
+    assert(attr != NULL);
+    assert(strncmp(attr->value, "Not Caitlyn", 100) == 0);
+
+    AttributeCollection_free(ac);
+
+    puts("AttributeCollection tests passed successfully!");
 
     return true;
 }

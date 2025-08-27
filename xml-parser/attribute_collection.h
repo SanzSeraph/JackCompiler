@@ -19,7 +19,7 @@ enum AttributeCollectionErrorCode {
 
 struct AttributeCollection *AttributeCollection_new();
 void AttributeCollection_free(struct AttributeCollection *self);
-char *AttributeCollection_get(struct AttributeCollection *self, char *name);
+struct Attribute *AttributeCollection_get(struct AttributeCollection *self, char *name);
 enum AttributeCollectionErrorCode AttributeCollection_set(struct AttributeCollection *self, char *name, char *value);
 
 #endif // ATTRIBUTE_COLLECTION_H
