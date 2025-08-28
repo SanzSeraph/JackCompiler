@@ -77,15 +77,16 @@ enum AttributeCollectionErrorCode AttributeCollection_set(struct AttributeCollec
         }
 
         attribute->name = name;
+
+        enum DynamicArrayErrorCode innerCode = DynamicArray_add(self->attributes, attribute);
+
+        if (innerCode == DYNAMIC_ARRAY_ERROR_MEMORY_ALLOCATION) {
+            code = ATTRIBUTE_COLLECTION_ERROR_MEMORY_ALLOCATION;
+        }
     }
 
     attribute->value = value;
-    enum DynamicArrayErrorCode innerCode = DynamicArray_add(self->attributes, attribute);
-
-    if (innerCode == DYNAMIC_ARRAY_ERROR_MEMORY_ALLOCATION) {
-        code = ATTRIBUTE_COLLECTION_ERROR_MEMORY_ALLOCATION;
-    }
-
+    
     ret:
     return code;
 }

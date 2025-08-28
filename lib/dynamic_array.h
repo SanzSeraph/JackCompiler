@@ -26,5 +26,6 @@ struct DynamicArrayResult DynamicArray_get(struct DynamicArray *self, size_t ind
 enum DynamicArrayErrorCode DynamicArray_set(struct DynamicArray *self, size_t index, void *elem);
 enum DynamicArrayErrorCode DynamicArray_add(struct DynamicArray *self, void *elem);
 size_t DynamicArray_size(struct DynamicArray *self);
+size_t DynamicArray_count(struct DynamicArray *self);
 
 #endif // DYNAMIC_ARRAY_H

@@ -100,3 +100,18 @@ size_t DynamicArray_size(struct DynamicArray *self)
 {
     return self->partitionCount * self->partitionSize;
 }
+
+size_t DynamicArray_count(struct DynamicArray *self)
+{
+    size_t count = 0;
+
+    for (size_t i = 0; i < self->partitionCount; i++) {
+        for (size_t j = 0; j < self->partitionSize; j++) {
+            if (self->partitions[i][j] != NULL) {
+                count++;
+            }
+        }
+    }
+
+    return count;
+}
