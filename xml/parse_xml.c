@@ -3,8 +3,13 @@
 #include <stdbool.h>
 #include <wchar.h>
 
-wchar_t legalStartCharacters[] = L"_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-wchar_t legalSubsequentCharacters[] = L".-0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+bool isLegalElementFirstCharacter(wchar_t c) {
+    return (c >= L'A' && c <= L'Z') || (c >= L'a' && c <= L'z') || c == L'_';
+}
+
+bool isLegalElementSubsequentCharacter(wchar_t c) {
+    return isLegalElementFirstCharacter(c) || (c >= L'0' && c <= L'9') || c == L'-' || c == L'.' || c == L':';
+}
 
 struct Node *parseXml(wchar_t (*getWideCharacter)(), wchar_t (*ungetWideCharacter)()) {
     struct Node *document = Node_new(NULL, NODE_TYPE_DOCUMENT);
@@ -36,7 +41,8 @@ struct ElementNode *parseXmlElement(wchar_t (*getWideCharacter)(), wchar_t (*ung
         goto ret;
     }
 
-
+    wchar_t currentChar = getWideCharacter();
+    
 
     ret:
     return element;
