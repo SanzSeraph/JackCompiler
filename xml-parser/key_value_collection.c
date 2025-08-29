@@ -1,14 +1,14 @@
-#include "attribute_collection.h"
+#include "key_value_collection.h"
 
-struct AttributeCollection *AttributeCollection_new()
+struct KeyValueCollection *KeyValueCollection_new()
 {
-    struct AttributeCollection *collection = (struct AttributeCollection *)malloc(sizeof(struct AttributeCollection));
+    struct KeyValueCollection *collection = (struct KeyValueCollection *)malloc(sizeof(struct KeyValueCollection));
     
     if (collection == NULL) {
         goto ret;
     }
 
-    *collection = (struct AttributeCollection){
+    *collection = (struct KeyValueCollection){
         .attributes = DynamicArray_new(10)
     };
 
@@ -16,7 +16,7 @@ struct AttributeCollection *AttributeCollection_new()
     return collection;
 }
 
-void AttributeCollection_free(struct AttributeCollection *self) 
+void AttributeCollection_free(struct KeyValueCollection *self) 
 {
     if (self == NULL) {
         goto ret;
@@ -41,7 +41,7 @@ void AttributeCollection_free(struct AttributeCollection *self)
     return;
 }
 
-struct Attribute *AttributeCollection_get(struct AttributeCollection *self, char *name) 
+struct KeyValue *KeyValueCollection_get(struct KeyValueCollection *self, char *name) 
 {
     size_t size = DynamicArray_size(self->attributes);
     struct Attribute *attribute = NULL;
@@ -50,7 +50,7 @@ struct Attribute *AttributeCollection_get(struct AttributeCollection *self, char
         struct DynamicArrayResult result = DynamicArray_get(self->attributes, i);
 
         if (result.code == DYNAMIC_ARRAY_SUCCESS && result.data != NULL) {
-            struct Attribute *currentAttribute = (struct Attribute *)result.data;
+            struct KeyValue *currentAttribute = (struct KeyValue *)result.data;
 
             if (strcmp(currentAttribute->name, name) == 0) {
                 attribute = currentAttribute;
@@ -63,16 +63,16 @@ struct Attribute *AttributeCollection_get(struct AttributeCollection *self, char
     return attribute;
 }
 
-enum AttributeCollectionErrorCode AttributeCollection_set(struct AttributeCollection *self, char *name, char *value) 
+enum KeyValueCollectionErrorCode AttributeCollection_set(struct KeyValueCollection *self, char *name, char *value) 
 {
-    enum AttributeCollectionErrorCode code = ATTRIBUTE_COLLECTION_SUCCESS;
-    struct Attribute *attribute = AttributeCollection_get(self, name);
+    enum KeyValueCollectionErrorCode code = KEY_VALUE_COLLECTION_SUCCESS;
+    struct KeyValue *attribute = KeyValueCollection_get(self, name);
 
     if (attribute == NULL) {
-        attribute = (struct Attribute *)malloc(sizeof(struct Attribute));
+        attribute = (struct KeyValue *)malloc(sizeof(struct KeyValue));
 
         if (attribute == NULL) {
-            code = ATTRIBUTE_COLLECTION_ERROR_MEMORY_ALLOCATION;
+            code = KEY_VALUE_COLLECTION_ERROR_MEMORY_ALLOCATION;
             goto ret;
         }
 
@@ -81,7 +81,7 @@ enum AttributeCollectionErrorCode AttributeCollection_set(struct AttributeCollec
         enum DynamicArrayErrorCode innerCode = DynamicArray_add(self->attributes, attribute);
 
         if (innerCode == DYNAMIC_ARRAY_ERROR_MEMORY_ALLOCATION) {
-            code = ATTRIBUTE_COLLECTION_ERROR_MEMORY_ALLOCATION;
+            code = KEY_VALUE_COLLECTION_ERROR_MEMORY_ALLOCATION;
         }
     }
 

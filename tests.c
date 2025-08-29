@@ -83,36 +83,36 @@ bool testDynamicArray(void) {
 bool testAttributeCollection(void) {
     puts("Testing AttributeCollection");
 
-    struct AttributeCollection *ac = AttributeCollection_new();
+    struct AttributeCollection *ac = KeyValueCollection_new();
     assert(ac != NULL);
 
-    enum AttributeCollectionErrorCode code = AttributeCollection_set(ac, "name", "Caitlyn");
+    enum AttributeCollectionErrorCode code = KeyValueCollection_set(ac, "name", "Caitlyn");
 
     assert(code == ATTRIBUTE_COLLECTION_SUCCESS);
 
-    struct Attribute *attr = AttributeCollection_get(ac, "name");
+    struct Attribute *attr = KeyValueCollection_get(ac, "name");
 
     assert(attr != NULL);
     assert(strncmp(attr->value, "Caitlyn", 100) == 0);
 
-    code = AttributeCollection_set(ac, "age", "29");
+    code = KeyValueCollection_set(ac, "age", "29");
 
     assert(code == ATTRIBUTE_COLLECTION_SUCCESS);
 
-    attr = AttributeCollection_get(ac, "age");
+    attr = KeyValueCollection_get(ac, "age");
 
     assert(attr != NULL);
     assert(strncmp(attr->value, "29", 100) == 0);
 
-    attr = AttributeCollection_get(ac, "nonexistent");
+    attr = KeyValueCollection_get(ac, "nonexistent");
 
     assert(attr == NULL);
 
-    code = AttributeCollection_set(ac, "name", "Not Caitlyn");
+    code = KeyValueCollection_set(ac, "name", "Not Caitlyn");
 
     assert(code == ATTRIBUTE_COLLECTION_SUCCESS);
 
-    attr = AttributeCollection_get(ac, "name");
+    attr = KeyValueCollection_get(ac, "name");
 
     assert(attr != NULL);
     assert(strncmp(attr->value, "Not Caitlyn", 100) == 0);
