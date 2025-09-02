@@ -53,3 +53,10 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# vcpkg
+packages/
+vcpkg_installed/
+
+# Visual Studio
+.vs/
