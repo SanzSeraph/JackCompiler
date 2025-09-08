@@ -8,7 +8,8 @@ enum ParseXmlReturnCodes {
     PARSE_XML_SUCCESS = 0,
     PARSE_XML_ERROR_MEMORY_ALLOCATION = 1,
     PARSE_XML_TOO_MANY_ROOT_ELEMENTS = 2,
-    PARSE_XML_INVALID_TAG_CHARACTER = 3
+    PARSE_XML_INVALID_TAG_CHARACTER = 3,
+    PARSE_XML_ELEMENT_NAME_TOO_LONG = 4
 };
 
 struct ParseResult {
@@ -16,7 +17,7 @@ struct ParseResult {
     enum ParseXmlReturnCodes code;
     size_t line;
     size_t column;
-    char* message;
+    char message[128];
 };
 
 struct ParseResult* ParseResult_new();

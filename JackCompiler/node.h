@@ -23,6 +23,7 @@ struct ElementNode {
     char* ns;
     char* nodeName;
     struct KeyValueCollection* attributes;
+    struct KeyValueCollection* dataset;
 };
 
 struct TextNode {
