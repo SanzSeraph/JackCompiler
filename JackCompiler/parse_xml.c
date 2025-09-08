@@ -54,17 +54,21 @@ struct ParseResult parseXml(char* path) {
 
 	FILE* file = fopen(path, "r");
 
-    wchar_t currentChar;
+    size_t currentLine = 1;
+	size_t currentColumn = 0;
+
+    char currentChar;
 
     while ((currentChar = fgetc(file)) != EOF) {
         if (currentChar == '<') {
-            struct ParseResult rootNodeParseResult = parseXmlElement(file);
+            currentColumn++;
+            struct ParseResult *rootNodeParseResult = parseXmlElement(file, currentLine, currentColumn);
 
             size_t count = DynamicArray_count(result.node->children);
 
             if (count > 0) {
                 Node_free(result.node);
-                Node_free(rootNodeParseResult.node);
+                Node_free(rootNodeParseResult->node);
                 result.code = PARSE_XML_TOO_MANY_ROOT_ELEMENTS;
                 goto ret;
             }
