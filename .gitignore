@@ -60,3 +60,18 @@ vcpkg_installed/
 
 # Visual Studio
 .vs/
+/JackCompiler/x64/
+/JackCompiler/x64/Debug/JackCompiler.tlog/CL.read.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/CL.write.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link-cvtres.read.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link-cvtres.write.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link-rc.read.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link-rc.write.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link.command.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link.read.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link.read.2.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link.read.3.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link.read.4.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/link.write.1.tlog
+/JackCompiler/x64/Debug/JackCompiler.tlog/unsuccessfulbuild
+/JackCompiler/x64/Debug/JackCompiler.log
