@@ -25,7 +25,7 @@ void Node_free(struct Node* self) {
     }
 
     if (self->children != NULL) {
-        size_t childCount = DynamicArray_size(self->children);
+        size_t childCount = self->children->currentEnd;
 
         for (size_t i = 0; i < childCount; i++) {
             struct DynamicArrayResult result = DynamicArray_get(self->children, i);

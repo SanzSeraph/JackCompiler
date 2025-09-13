@@ -22,7 +22,7 @@ void KeyValueCollection_free(struct KeyValueCollection* self)
         goto ret;
     }
 
-    size_t size = DynamicArray_size(self->attributes);
+    size_t size = self->attributes->currentEnd;
 
     for (size_t i = 0; i < size; i++) {
         struct DynamicArrayResult result = DynamicArray_get(self->attributes, i);
@@ -43,7 +43,7 @@ ret:
 
 struct KeyValue* KeyValueCollection_get(struct KeyValueCollection* self, char* name)
 {
-    size_t size = DynamicArray_size(self->attributes);
+    size_t size = self->attributes->currentEnd;
     struct KeyValue* kvp = NULL;
 
     for (size_t i = 0; i < size; i++) {

@@ -4,19 +4,54 @@
 #include <stdbool.h>
 #include <wchar.h>
 #include <stdint.h>
+#include <string.h>
+
 #define MAX_NAMESPACE_LENGTH 128
 #define MAX_ELEMENT_NAME_LENGTH 1024
+#define MAX_ATTRIBUTE_NAMESPACE_LENGTH 128
 #define MAX_ATTRIBUTE_NAME_LENGTH 256
 #define MAX_ATTRIBUTE_VALUE_LENGTH 2048
+#define OUT_OF_MEMORY_MESSAGE "Out of memory"
+#define ILLEGAL_FIRST_CHARACTER_MESSAGE "Illegal first character %c at line %lu column %lu"
+#define FAILED_TO_ALLOCATE_NAMESPACE_MESSAGE "Failed to allocate namespace"
+#define FAILED_TO_ALLOCATE_ELEMENT_NAME_MESSAGE "Failed to allocate element name"
+#define ELEMENT_NAME_TOO_LONG_MESSAGE "Element name starting with %s is too long."
+#define ILLEGAL_ELEMENT_NAME_CHARACTER_MESSAGE "Illegal character %c at line %lu column %lu"
+#define UNEXPECTED_EOF_MESSAGE "Unexpected end of file"
+#define EXPECTED_XML_MESSAGE "Expected 'xml' at line %lu column %lu"
+#define EXPECTED_WHITESPACE_AFTER_XML_MESSAGE "Expected whitespace after 'xml' at line %lu column %lu"
+#define EXPECTED_LT_TO_CLOSE_PROLOG_MESSAGE "Expected '<' to close prolog at line %lu column %lu"
+#define ATTRIBUTE_NAME_TOO_LONG_MESSAGE "Attribute name starting with %s is too long."
+#define MULTIPLE_NAMESPACES_NOT_SUPPORTED_MESSAGE "Multiple namespaces are not supported at line %lu column %lu."
+
+struct ParseContext {
+    FILE* file;
+    size_t currentLine;
+    size_t currentColumn;
+};
+
+struct ParseContext *ParseContext_new(FILE* file, size_t currentLine, size_t currentColumn) {
+    struct ParseContext* context = malloc(sizeof(struct ParseContext));
+
+    if (context != NULL) {
+        context->file = file;
+        context->currentLine = currentLine;
+        context->currentColumn = currentColumn;
+    }
+
+    return context;
+}
 
 bool isLegalElementFirstCharacter(char c);
 bool isLegalElementSubsequentCharacter(char c);
+bool isLegalAttributeFirstCharacter(char c);
+bool isLegalAttributeSubsequentCharacter(char c);
 bool isWhitespace(char c);
 
-struct ParseResult parseXmlElement(FILE *file, size_t currentLine, size_t currentColumn);
-struct ParseResult parseAttributes(FILE* file, size_t currentLine, size_t currentColumn);
-struct ParseResult consumeWhitespace(FILE* file, size_t currentLine, size_t currentColumn);
-struct ParseResult consumeProlog(FILE* file, size_t currentLine, size_t currentColumn);
+struct ParseResult parseXmlElement(struct ParseContext *parseContext, struct KeyValueCollection *namespaces);
+struct ParseResult parseAttributes(struct ParseContext *parseContext);
+struct ParseResult consumeWhitespace(struct ParseContext *parseContext);
+struct ParseResult consumeProlog(struct ParseContext *parseContext);
 
 struct ParseResult parseXml(char* path) 
 {
@@ -29,30 +64,28 @@ struct ParseResult parseXml(char* path)
 
     if (result.value == NULL) {
         result.code = PARSE_XML_ERROR_MEMORY_ALLOCATION;
-        sprintf(result.message, "Out of memory");
+        sprintf_s(result.message, sizeof(OUT_OF_MEMORY_MESSAGE), OUT_OF_MEMORY_MESSAGE);
 
         goto ret;
     }
 
-	FILE* file = fopen(path, "r");
+    FILE* file = fopen(path, "r");
+    struct ParseContext* parseContext = ParseContext_new(file, 1, 0);
 
-    size_t currentLine = 1;
-	size_t currentColumn = 0;
-    
-	consumeWhitespace(file, &currentLine, &currentColumn);
+    consumeWhitespace(parseContext);
 
-    char currentChar;
     struct KeyValueCollection* namespaces = KeyValueCollection_new();
+    char currentChar;
 
     while ((currentChar = fgetc(file)) != EOF) {
         if (currentChar == '<') {
-            currentColumn++;
+            parseContext->currentColumn++;
 
             currentChar = fgetc(file);
-			currentColumn++;
+			parseContext->currentColumn++;
 
             if (currentChar == '?') {
-                struct ParseResult prologParseResult = consumeProlog(file, &currentLine, &currentColumn);
+                struct ParseResult prologParseResult = consumeProlog(parseContext);
 
                 if (prologParseResult.code != PARSE_XML_SUCCESS) {
                     result.code = prologParseResult.code;
@@ -61,12 +94,12 @@ struct ParseResult parseXml(char* path)
 				}
             } else {
                 ungetc(currentChar, file);
-				currentColumn--;
+				parseContext->currentColumn--;
             }
 
-            struct ParseResult rootNodeParseResult = parseXmlElement(file, currentLine, currentColumn, namespaces);
+            struct ParseResult rootNodeParseResult = parseXmlElement(parseContext, namespaces);
 
-            size_t count = DynamicArray_count(((struct Node *)result.value)->children);
+            size_t count = ((struct Node *)result.value)->children->currentEnd;
 
             if (count > 0) {
                 Node_free(result.value);
@@ -97,31 +130,32 @@ ret:
 /// <param name="currentColumn"></param>
 /// <param name="namespaces"></param>
 /// <returns></returns>
-struct ParseResult parseXmlElement(FILE *file, size_t currentLine, size_t currentColumn, struct KeyValueCollection *namespaces) 
+struct ParseResult parseXmlElement(struct ParseContext *parseContext, struct KeyValueCollection *namespaces) 
 {
     struct ParseResult result = (struct ParseResult){
         .code = PARSE_XML_SUCCESS,
         .value = NULL
     };
 
-    char currentChar = fgetc(file);
+    char currentChar = fgetc(parseContext->file);
     
     if (!isLegalElementFirstCharacter(currentChar)) {
-        ungetc(currentChar, file);
+        ungetc(currentChar, parseContext->file);
 
         result.code = PARSE_XML_INVALID_TAG_CHARACTER;
-        sprintf(result.message, "Illegal first character %c at line %lu column %lu", currentChar, currentLine, currentColumn);
-        result.line = currentLine;
-        result.column = currentColumn;
-    
+        snprintf(result.message, sizeof(ILLEGAL_FIRST_CHARACTER_MESSAGE), ILLEGAL_FIRST_CHARACTER_MESSAGE, currentChar, parseContext->currentLine, parseContext->currentColumn);
+            
         goto ret;
+    }
+    else {
+		parseContext->currentColumn++;
     }
 
     char *namespace = calloc(MAX_NAMESPACE_LENGTH, sizeof(char));
 
     if (namespace == NULL) {
         result.code = PARSE_XML_ERROR_MEMORY_ALLOCATION;
-        sprintf(result.message, "Failed to allocate dynamicNamespace");
+        snprintf(result.message, sizeof(FAILED_TO_ALLOCATE_NAMESPACE_MESSAGE), FAILED_TO_ALLOCATE_NAMESPACE_MESSAGE);
 
         goto ret;
     }
@@ -130,69 +164,73 @@ struct ParseResult parseXmlElement(FILE *file, size_t currentLine, size_t curren
 
     if (elementName == NULL) {
         result.code = PARSE_XML_ERROR_MEMORY_ALLOCATION;
-        sprintf(result.message, "Failed to allocate dynamicElemetnName");
+        snprintf(result.message, sizeof(FAILED_TO_ALLOCATE_ELEMENT_NAME_MESSAGE), FAILED_TO_ALLOCATE_ELEMENT_NAME_MESSAGE);
 
         goto ret;
     }
 
+    bool namespaceFound = false;
     short index = 0;
 
-    while ((currentChar = fgetc(file)) != EOF && !isWhitespace(currentChar)) {
-        currentColumn++;
+    while ((currentChar = fgetc(parseContext->file)) != EOF && !isWhitespace(currentChar)) {
+        parseContext->currentColumn++;
 
-        if (index >= MAX_ELEMENT_NAME_LENGTH) {
+        if (index >= MAX_ELEMENT_NAME_LENGTH - 1) {
             result.code = PARSE_XML_ELEMENT_NAME_TOO_LONG;
-            sprintf(result.message, "Element name starting with %s is too long.", elementName);
-            result.line = currentLine;
-            result.column = currentColumn;
-
+            snprintf(result.message, sizeof(ELEMENT_NAME_TOO_LONG_MESSAGE), ELEMENT_NAME_TOO_LONG_MESSAGE, elementName);
+            
             goto ret;
         }
 
         if (!isLegalElementSubsequentCharacter(currentChar)) {
             result.code = PARSE_XML_INVALID_TAG_CHARACTER;
-            sprintf(result.message, "Illegal character %c at line %lu column %lu", currentChar, currentLine, currentColumn);
-            result.line = currentLine;
-            result.column = currentColumn;
-
+            snprintf(result.message, sizeof(ILLEGAL_ELEMENT_NAME_CHARACTER_MESSAGE), ILLEGAL_ELEMENT_NAME_CHARACTER_MESSAGE, currentChar, parseContext->currentLine, parseContext->currentColumn);
+            
             goto ret;
         }
 
-        if (currentChar == ':') {
+        if (currentChar == ':' && !namespaceFound) {
             memcpy(namespace, elementName, sizeof(namespace));
             memset(elementName, 0, sizeof(elementName));
-        } else {
+        }
+        else if (currentChar == ':') {
+			result.code = PARSE_XML_MULTIPLE_NAMESPACES_NOT_SUPPORTED;
+			namespace[MAX_ATTRIBUTE_NAMESPACE_LENGTH - 1] = '\0';
+			snprintf(result.message, sizeof(MULTIPLE_NAMESPACES_NOT_SUPPORTED_MESSAGE), MULTIPLE_NAMESPACES_NOT_SUPPORTED_MESSAGE, namespace);
+        }
+        else {
             elementName[index] = currentChar;
         }
     }
 
     if (currentChar == EOF) {
         result.code = PARSE_XML_UNEXPECTED_EOF;
-        sprintf(result.message, "Unexpected end of file while parsing element %s:%s", namespace, elementName);
-        result.column = currentColumn;
-        result.line = currentLine;
-
+        snprintf(result.message, sizeof(UNEXPECTED_EOF_MESSAGE), UNEXPECTED_EOF_MESSAGE);
+        
         goto ret;
     } 
     
     if (currentChar == '\n') {
-        currentColumn = 1;
-        currentLine++;
+        parseContext->currentLine++;
+        parseContext->currentColumn = 0;
     }
-
-	struct ParseResult consumeWhitespaceResult = consumeWhitespace(file, currentLine, currentColumn);
 
     result.value = ElementNode_new(namespace, elementName);
 
+	struct ParseResult consumeWhitespaceResult = consumeWhitespace(parseContext);
+
+    if (consumeWhitespaceResult.code != PARSE_XML_SUCCESS) {
+        result.code = consumeWhitespaceResult.code;
+        snprinf(result.message, sizeof(result.message), consumeWhitespaceResult.message);
+    }
+
     struct ElementNode* elementNode = (struct ElementNode*)result.value;
 
-    struct ParseResult parseAttributesResult = parseAttributes(file, &currentLine, &currentColumn);
+    struct ParseResult parseAttributesResult = parseAttributes(parseContext);
 
     if (parseAttributesResult.code != PARSE_XML_SUCCESS) {
         result.code == parseAttributesResult.code;
-        result.line = parseAttributesResult.line;
-		result.column = parseAttributesResult.column;
-        sprintf(result.message, parseAttributesResult.message);
+        snprintf(result.message, sizeof(result.message), parseAttributesResult.message);
 		
         goto ret;
     }
@@ -203,14 +241,14 @@ struct ParseResult parseXmlElement(FILE *file, size_t currentLine, size_t curren
         return result;
 }
 
-struct ParseResult parseAttributes(FILE* file, size_t *currentLine, size_t *currentColumn)
+struct ParseResult parseAttributes(struct ParseContext *parseContext)
 {
     struct ParseResult result = (struct ParseResult){
         .code = PARSE_XML_SUCCESS,
         .value = NULL
     };
 
-    struct ParseResult consumeWhitespaceResult = consumeWhitespace(file, currentLine, currentColumn);
+    struct ParseResult consumeWhitespaceResult = consumeWhitespace(parseContext);
 
     if (consumeWhitespaceResult.code != PARSE_XML_SUCCESS) {
         result = consumeWhitespaceResult;
@@ -221,16 +259,56 @@ struct ParseResult parseAttributes(FILE* file, size_t *currentLine, size_t *curr
     char currentChar;
     char key[MAX_ATTRIBUTE_NAME_LENGTH];
 	char value[MAX_ATTRIBUTE_NAME_LENGTH];
+	short currentKeyIndex = 0;
+	short currentValueIndex = 0;
+    struct KeyValueCollection *attributes = KeyValueCollection_new();
+    struct KeyValue* kvp;
+    bool namespaceFound = false;
+    bool inString = false;
+    bool inKey = false;
+    bool inValue = false;
 
-    while ((currentChar = fgetc(file))) {
+    while ((currentChar = fgetc(parseContext->file)) != EOF && (currentChar != '>' || currentChar == '>' && inString == true)) {
+        if (currentChar == '\n') {
+            parseContext->currentLine++;
+            parseContext->currentColumn = 0;
+        }
+        else {
+            parseContext->currentColumn++;
+        }
 
+        if (inKey) {
+            if (currentChar == '=' || isWhitespace(currentChar)) {
+                inKey = false;
+                key[currentKeyIndex] = '\0';
+				currentKeyIndex = 0;
+                kvp->name = strdup(key);
+            }
+            else if (currentKeyIndex >= MAX_ATTRIBUTE_NAME_LENGTH) {
+				result.code = PARSE_XML_ATTRIBUTE_NAME_TOO_LONG;
+                snprintf(result.message, sizeof(ATTRIBUTE_NAME_TOO_LONG_MESSAGE), ATTRIBUTE_NAME_TOO_LONG_MESSAGE, key);
+                
+                goto ret;
+            }
+            else if (!isLegalElementSubsequentCharacter(currentChar)) {
+                result.code = PARSE_XML_INVALID_TAG_CHARACTER;
+                snprintf(result.message, sizeof(ILLEGAL_ELEMENT_NAME_CHARACTER_MESSAGE), ILLEGAL_ELEMENT_NAME_CHARACTER_MESSAGE, currentChar, parseContext->currentLine, parseContext->currentColumn);
+                
+                goto ret;
+            }
+            else {
+				key[currentKeyIndex++] = currentChar;
+            }
+            
+
+        }
     }
 
     ret: 
     return result;
 }
 
-struct ParseResult consumeWhitespace(FILE *file, size_t currentLine, size_t currentColumn) 
+struct ParseResult consumeWhitespace(struct ParseContext *parseContext) 
 {
     struct ParseResult result = {
         .code = PARSE_XML_SUCCESS,
@@ -239,121 +317,104 @@ struct ParseResult consumeWhitespace(FILE *file, size_t currentLine, size_t curr
 
     char currentChar;
 
-    while((currentChar = fgetc(file)) != EOF && (currentChar == ' ' || currentChar == '\t' || currentChar == '\n')) {
+    while((currentChar = fgetc(parseContext->file)) != EOF && (currentChar == ' ' || currentChar == '\t' || currentChar == '\n')) {
         if (currentChar == '\n') {
-            currentLine++;
-            currentColumn = 0;
+            parseContext->currentLine++;
+            parseContext->currentColumn = 0;
         } else {
-            currentColumn++;
+            parseContext->currentColumn++;
         }
 	}
 
     if (currentChar == EOF) {
 		result.code = PARSE_XML_UNEXPECTED_EOF;
-        result.line = currentLine;
-		result.column = currentColumn;
-        sprintf(result.message, "Unexpected end of file");
+        snprintf(result.message, sizeof(UNEXPECTED_EOF_MESSAGE), UNEXPECTED_EOF_MESSAGE);
         
         goto ret;
     }
 
-	ungetc(currentChar, file);
-    currentColumn--;
-    result.line = currentLine;
-	result.column = currentColumn;
+	ungetc(currentChar, parseContext->file);
+    parseContext->currentColumn--;
     
     ret:
-        return result;
+    return result;
 }
 
 /// <summary>
 /// Assumes that the <? part of the prolog have already been consumed
 /// </summary>
-struct ParseResult consumeProlog(FILE* file, size_t currentLine, size_t currentColumn) 
+struct ParseResult consumeProlog(struct ParseContext *parseContext) 
 {
     struct ParseResult result = {
         .code = PARSE_XML_SUCCESS,
         .value = NULL
 	};
 
-    char currentChar = fgetc(file);
-    currentColumn++;
+    char currentChar = fgetc(parseContext->file);
+    parseContext->currentColumn++;
 
     if (currentChar == EOF) {
 		result.code = PARSE_XML_UNEXPECTED_EOF;
-		result.line = currentLine;
-		result.column = currentColumn;
-
+		
         goto ret;
     }
 	
     if (currentChar != 'x') {
 		result.code = PARSE_XML_INVALID_TAG_CHARACTER;
-        result.line = currentLine;
-		result.column = currentColumn;
-		sprintf(result.message, "Expected 'xml' at line %lu column %lu", currentLine, currentColumn);
+        snprintf(result.message, sizeof(EXPECTED_XML_MESSAGE), EXPECTED_XML_MESSAGE, parseContext->currentLine, parseContext->currentColumn);
 
         goto ret;
     }
 
-	currentChar = fgetc(file);
-	currentColumn++;
-
+	currentChar = fgetc(parseContext);
+	
     if (currentChar != 'm') {
         result.code = PARSE_XML_INVALID_TAG_CHARACTER;
-		result.line = currentLine;
-        result.column = currentColumn;
-		sprintf(result.message, "Expected 'xml' at line %lu column %lu", currentLine, currentColumn);
+		snprintf(result.message, sizeof(EXPECTED_XML_MESSAGE), EXPECTED_XML_MESSAGE, parseContext->currentLine, parseContext->currentColumn);
 
 		goto ret;
     }
 
-	currentChar = fgetc(file);
-    currentColumn++;
+	currentChar = fgetc(parseContext->file);
+    parseContext->currentColumn++;
 
     if (currentChar != 'l') {
         result.code = PARSE_XML_INVALID_TAG_CHARACTER;
-		result.line = currentLine;
-		result.column = currentColumn;
-		sprintf(result.message, "Expected 'xml' at line %lu column %lu", currentLine, currentColumn);
+		snprintf(result.message, sizeof(EXPECTED_XML_MESSAGE), EXPECTED_XML_MESSAGE, parseContext->currentLine, parseContext->currentColumn);
 
         goto ret;
     }
 
-	currentChar = fgetc(file);
-	currentColumn++;
+	currentChar = fgetc(parseContext->file);
+	parseContext->currentColumn++;
 
     if (currentChar != ' ') {
         result.code = PARSE_XML_INVALID_TAG_CHARACTER;
-		result.line = currentLine;
-		result.column = currentColumn;
-		sprintf(result.message, "Expected whitespace after 'xml' at line %lu column %lu", currentLine, currentColumn);
+		snprintf(result.message, sizeof(EXPECTED_WHITESPACE_AFTER_XML_MESSAGE), EXPECTED_WHITESPACE_AFTER_XML_MESSAGE, parseContext->currentLine, parseContext->currentColumn);
 
         goto ret;
     }
 
     bool inString = false;
     
-    while ((currentChar = fgetc(file)) != EOF) {
+    while ((currentChar = fgetc(parseContext->file)) != EOF) {
         if (currentChar = '\n') {
-            currentLine++;
-            currentColumn = 0;
+            parseContext->currentLine++;
+            parseContext->currentColumn = 0;
         }
         else {
-            currentColumn++;
+            parseContext->currentColumn++;
         }
         		
         if (currentChar == '"') {
             inString = !inString;
         }
         else if (currentChar == '?' && !inString) {
-            currentChar = fgetc(file);
-            currentColumn++;
+            currentChar = fgetc(parseContext->file);
+            parseContext->currentColumn++;
             if (currentChar != '>') {
                 result.code = PARSE_XML_INVALID_TAG_CHARACTER;
-                result.line = currentLine;
-                result.column = currentColumn;
-                sprintf(result.message, "Expected > to close the prolog at line %lu column %lu", currentLine, currentColumn);
+                snprintf(result.message, sizeof(EXPECTED_LT_TO_CLOSE_PROLOG_MESSAGE), EXPECTED_LT_TO_CLOSE_PROLOG_MESSAGE, parseContext->currentLine, parseContext->currentColumn);
 
                 goto ret;
             }
@@ -369,12 +430,22 @@ struct ParseResult consumeProlog(FILE* file, size_t currentLine, size_t currentC
 
 bool isLegalElementFirstCharacter(char c)
 {
-    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+    return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '_';
 }
 
 bool isLegalElementSubsequentCharacter(char c)
 {
     return isLegalElementFirstCharacter(c) || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == ':';
+}
+
+bool isLegalAttributeFirstCharacter(char c) 
+{
+	return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '_';
+}
+
+bool isLegalAttributeSubsequentCharacter(char c) 
+{
+	return isLegalAttributeFirstCharacter(c) || (c >= '0' && c <= '9') || c == '-' || c == '.' || c == ':';
 }
 
 bool isWhitespace(char c)

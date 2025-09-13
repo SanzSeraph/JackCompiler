@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <string.h>
 
+bool testDynamicArray(void);
+bool testAttributeCollection(void);
+
 int main(int argc, char* argv[]) {
     bool success = testDynamicArray();
     success = success && testAttributeCollection();
@@ -62,8 +65,7 @@ bool testDynamicArray(void) {
     code = DynamicArray_add(da, "twelfth");
 
     assert(code == DYNAMIC_ARRAY_SUCCESS);
-    assert(da->partitionCount == 2);
-
+    
     result = DynamicArray_get(da, 11);
 
     assert(result.code == DYNAMIC_ARRAY_SUCCESS);

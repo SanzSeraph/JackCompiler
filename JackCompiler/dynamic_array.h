@@ -3,9 +3,8 @@
 #include <stddef.h>
 
 struct DynamicArray {
-    size_t partitionSize;
-    void*** partitions;
-    size_t partitionCount;
+    size_t capacity;
+    void **array;
     size_t currentEnd;
 };
 
@@ -20,12 +19,10 @@ struct DynamicArrayResult {
     void* data;
 };
 
-struct DynamicArray* DynamicArray_new(size_t partitionSize);
+struct DynamicArray* DynamicArray_new(size_t initialSize);
 void DynamicArray_free(struct DynamicArray* self);
 struct DynamicArrayResult DynamicArray_get(struct DynamicArray* self, size_t index);
 enum DynamicArrayErrorCode DynamicArray_set(struct DynamicArray* self, size_t index, void* elem);
 enum DynamicArrayErrorCode DynamicArray_add(struct DynamicArray* self, void* elem);
-size_t DynamicArray_size(struct DynamicArray* self);
-size_t DynamicArray_count(struct DynamicArray* self);
 
 #endif // DYNAMIC_ARRAY_H#pragma once

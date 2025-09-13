@@ -30,9 +30,6 @@
     <ClCompile Include="JackCompiler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tests.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="dynamic_array.c">
       <Filter>Source Files\lib</Filter>
     </ClCompile>
