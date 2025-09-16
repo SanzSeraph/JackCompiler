@@ -126,6 +126,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="attribute_collection.h" />
     <ClCompile Include="dynamic_array.c" />
     <ClCompile Include="JackCompiler.c" />
     <ClCompile Include="key_value_collection.c" />

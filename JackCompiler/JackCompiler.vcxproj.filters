@@ -42,6 +42,9 @@
     <ClCompile Include="node.c">
       <Filter>Source Files\lib\xml</Filter>
     </ClCompile>
+    <ClCompile Include="attribute_collection.h">
+      <Filter>Header Files\lib\xml</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dynamic_array.h">

@@ -6,11 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define MAX_NAMESPACE_LENGTH 128
-#define MAX_ELEMENT_NAME_LENGTH 1024
-#define MAX_ATTRIBUTE_NAMESPACE_LENGTH 128
-#define MAX_ATTRIBUTE_NAME_LENGTH 256
-#define MAX_ATTRIBUTE_VALUE_LENGTH 2048
+
 #define OUT_OF_MEMORY_MESSAGE "Out of memory"
 #define ILLEGAL_FIRST_CHARACTER_MESSAGE "Illegal first character %c at line %lu column %lu"
 #define FAILED_TO_ALLOCATE_NAMESPACE_MESSAGE "Failed to allocate namespace"
@@ -151,7 +147,7 @@ struct ParseResult parseXmlElement(struct ParseContext *parseContext, struct Key
 		parseContext->currentColumn++;
     }
 
-    char *namespace = calloc(MAX_NAMESPACE_LENGTH, sizeof(char));
+    char *namespace = DynamicArray_new(128);
 
     if (namespace == NULL) {
         result.code = PARSE_XML_ERROR_MEMORY_ALLOCATION;
@@ -160,7 +156,7 @@ struct ParseResult parseXmlElement(struct ParseContext *parseContext, struct Key
         goto ret;
     }
 
-    char *elementName = calloc(MAX_ELEMENT_NAME_LENGTH, sizeof(char));
+    char *elementName = DynamicArray_new(128);
 
     if (elementName == NULL) {
         result.code = PARSE_XML_ERROR_MEMORY_ALLOCATION;
@@ -171,16 +167,10 @@ struct ParseResult parseXmlElement(struct ParseContext *parseContext, struct Key
 
     bool namespaceFound = false;
     short index = 0;
+    char* boxedChar;
 
     while ((currentChar = fgetc(parseContext->file)) != EOF && !isWhitespace(currentChar)) {
         parseContext->currentColumn++;
-
-        if (index >= MAX_ELEMENT_NAME_LENGTH - 1) {
-            result.code = PARSE_XML_ELEMENT_NAME_TOO_LONG;
-            snprintf(result.message, sizeof(ELEMENT_NAME_TOO_LONG_MESSAGE), ELEMENT_NAME_TOO_LONG_MESSAGE, elementName);
-            
-            goto ret;
-        }
 
         if (!isLegalElementSubsequentCharacter(currentChar)) {
             result.code = PARSE_XML_INVALID_TAG_CHARACTER;
@@ -195,11 +185,18 @@ struct ParseResult parseXmlElement(struct ParseContext *parseContext, struct Key
         }
         else if (currentChar == ':') {
 			result.code = PARSE_XML_MULTIPLE_NAMESPACES_NOT_SUPPORTED;
-			namespace[MAX_ATTRIBUTE_NAMESPACE_LENGTH - 1] = '\0';
+            boxedChar = malloc(1);
+            *boxedChar = '\0';
+            DynamicArray_add(namespace, boxedChar);
+			
 			snprintf(result.message, sizeof(MULTIPLE_NAMESPACES_NOT_SUPPORTED_MESSAGE), MULTIPLE_NAMESPACES_NOT_SUPPORTED_MESSAGE, namespace);
+
+            goto ret;
         }
         else {
-            elementName[index] = currentChar;
+			boxedChar = malloc(1);
+            *boxedChar = currentChar;
+            DynamicArray_add(elementName, boxedChar);
         }
     }
 
@@ -257,18 +254,16 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
     }
 
     char currentChar;
-    char key[MAX_ATTRIBUTE_NAME_LENGTH];
-	char value[MAX_ATTRIBUTE_NAME_LENGTH];
 	short currentKeyIndex = 0;
 	short currentValueIndex = 0;
+    struct DynamicArray* namespace = DynamicArray_new(10);
     struct KeyValueCollection *attributes = KeyValueCollection_new();
     struct KeyValue* kvp;
     bool namespaceFound = false;
-    bool inString = false;
     bool inKey = false;
     bool inValue = false;
 
-    while ((currentChar = fgetc(parseContext->file)) != EOF && (currentChar != '>' || currentChar == '>' && inString == true)) {
+    while ((currentChar = fgetc(parseContext->file)) != EOF && currentChar != '>') {
         if (currentChar == '\n') {
             parseContext->currentLine++;
             parseContext->currentColumn = 0;
@@ -277,18 +272,13 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
             parseContext->currentColumn++;
         }
 
+
         if (inKey) {
             if (currentChar == '=' || isWhitespace(currentChar)) {
                 inKey = false;
                 key[currentKeyIndex] = '\0';
 				currentKeyIndex = 0;
                 kvp->name = strdup(key);
-            }
-            else if (currentKeyIndex >= MAX_ATTRIBUTE_NAME_LENGTH) {
-				result.code = PARSE_XML_ATTRIBUTE_NAME_TOO_LONG;
-                snprintf(result.message, sizeof(ATTRIBUTE_NAME_TOO_LONG_MESSAGE), ATTRIBUTE_NAME_TOO_LONG_MESSAGE, key);
-                
-                goto ret;
             }
             else if (!isLegalElementSubsequentCharacter(currentChar)) {
                 result.code = PARSE_XML_INVALID_TAG_CHARACTER;
@@ -299,8 +289,9 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
             else {
 				key[currentKeyIndex++] = currentChar;
             }
-            
-
+        }
+        else if (inValue) {
+            if (currentChar)
         }
     }
 
