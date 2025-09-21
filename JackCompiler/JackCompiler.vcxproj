@@ -128,6 +128,7 @@
   <ItemGroup>
     <ClCompile Include="attribute_collection.h" />
     <ClCompile Include="dynamic_array.c" />
+    <ClCompile Include="dynamic_string.c" />
     <ClCompile Include="JackCompiler.c" />
     <ClCompile Include="key_value_collection.c" />
     <ClCompile Include="node.c" />
@@ -135,6 +136,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dynamic_array.h" />
+    <ClInclude Include="dynamic_string.h" />
     <ClInclude Include="key_value_collection.h" />
     <ClInclude Include="node.h" />
     <ClInclude Include="parse_xml.h" />

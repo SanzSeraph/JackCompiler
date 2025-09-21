@@ -1,4 +1,5 @@
 #include "dynamic_array.h"
+#include "dynamic_string.h"
 #include "key_value_collection.h"
 #include <assert.h>
 #include <stdio.h>
@@ -6,6 +7,7 @@
 #include <string.h>
 
 bool testDynamicArray(void);
+bool testDynamicString(void);
 bool testAttributeCollection(void);
 
 int main(int argc, char* argv[]) {
@@ -120,4 +122,30 @@ bool testAttributeCollection(void) {
     puts("KeyValueCollection tests passed successfully!");
 
     return true;
+}
+
+bool testDynamicString(void) {
+    puts("Testing DynamicString");
+
+	struct DynamicString* ds = DynamicString_new(5);
+
+    DynamicString_add(ds, 'H');
+	DynamicString_add(ds, 'e');
+	DynamicString_add(ds, 'l');
+	DynamicString_add(ds, 'l');
+	DynamicString_add(ds, 'o');
+	DynamicString_add(ds, ' ');
+	DynamicString_add(ds, 'W');
+	DynamicString_add(ds, 'o');
+	DynamicString_add(ds, 'r');
+	DynamicString_add(ds, 'l');
+	DynamicString_add(ds, 'd');
+	DynamicString_add(ds, '!');
+	DynamicString_add(ds, '\0');
+
+    puts(ds->array);
+
+    assert(strncmp(ds->array, "Hello World!", ds->capacity));
+
+    puts("DynamicString tests passed successfully!");
 }

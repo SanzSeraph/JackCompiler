@@ -5,6 +5,7 @@
 #include <wchar.h>
 #include <stdint.h>
 #include <string.h>
+#include "attribute_collection.h"
 
 
 #define OUT_OF_MEMORY_MESSAGE "Out of memory"
@@ -254,11 +255,13 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
     }
 
     char currentChar;
-	short currentKeyIndex = 0;
 	short currentValueIndex = 0;
-    struct DynamicArray* namespace = DynamicArray_new(10);
+    struct DynamicArray* namespace = DynamicArray_new(16);
+	struct DynamicArray* key = DynamicArray_new(64);
+	struct DynamicArray* value = DynamicArray_new(64);
     struct KeyValueCollection *attributes = KeyValueCollection_new();
-    struct KeyValue* kvp;
+    struct Attribute* attribute;
+	struct KeyValue* kvp = KeyValue
     bool namespaceFound = false;
     bool inKey = false;
     bool inValue = false;
@@ -272,13 +275,22 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
             parseContext->currentColumn++;
         }
 
-
         if (inKey) {
             if (currentChar == '=' || isWhitespace(currentChar)) {
                 inKey = false;
-                key[currentKeyIndex] = '\0';
-				currentKeyIndex = 0;
-                kvp->name = strdup(key);
+                DynamicArray_add(key, '\0');
+                kvp->name = DynamicArray_toString(key);
+            } else if (currentChar == ':') {
+                if (namespaceFound) {
+                    result.code = PARSE_XML_MULTIPLE_NAMESPACES_NOT_SUPPORTED;
+                    snprintf(result.message, sizeof(MULTIPLE_NAMESPACES_NOT_SUPPORTED_MESSAGE), MULTIPLE_NAMESPACES_NOT_SUPPORTED_MESSAGE, parseContext->currentLine, parseContext->currentColumn);
+                    goto ret;
+                } else {
+                    namespaceFound = true;
+                    attribute->ns = DynamicArray_toString(namespace);
+                    DynamicArray_free(key);
+					key = DynamicArray_new(64);
+				}
             }
             else if (!isLegalElementSubsequentCharacter(currentChar)) {
                 result.code = PARSE_XML_INVALID_TAG_CHARACTER;
@@ -287,11 +299,13 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
                 goto ret;
             }
             else {
-				key[currentKeyIndex++] = currentChar;
+				char* boxedChar = malloc(1);
+                *boxedChar = currentChar;
+                DynamicArray_add(key, boxedChar);
             }
         }
         else if (inValue) {
-            if (currentChar)
+            
         }
     }
 

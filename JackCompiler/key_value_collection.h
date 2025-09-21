@@ -17,6 +17,9 @@ enum KeyValueCollectionErrorCode {
     KEY_VALUE_COLLECTION_ERROR_MEMORY_ALLOCATION = 1
 };
 
+struct KeyValue* KeyValue_new();
+void KeyValue_free(struct KeyValue* self);
+
 struct KeyValueCollection* KeyValueCollection_new();
 void KeyValueCollection_free(struct KeyValueCollection* self);
 struct KeyValue* KeyValueCollection_get(struct KeyValueCollection* self, char* name);
