@@ -83,41 +83,41 @@ bool testDynamicArray(void) {
 bool testAttributeCollection(void) {
     puts("Testing KeyValueCollection");
 
-    struct KeyValueCollection* keyValueCollection = KeyValueCollection_new();
+    struct KeyValueCollection* keyValueCollection = KeyValuePairCollection_new();
     assert(keyValueCollection != NULL);
 
-    enum KeyValueCollectionErrorCode code = KeyValueCollection_set(keyValueCollection, "name", "Caitlyn");
+    enum KeyValueCollectionErrorCode code = KeyValuePairCollection_set(keyValueCollection, "name", "Caitlyn");
 
     assert(code == KEY_VALUE_COLLECTION_SUCCESS);
 
-    struct KeyValue* kv = KeyValueCollection_get(keyValueCollection, "name");
+    struct KeyValuePair* kv = KeyValuePairCollection_get(keyValueCollection, "name");
 
     assert(kv != NULL);
     assert(strncmp(kv->value, "Caitlyn", 100) == 0);
 
-    code = KeyValueCollection_set(keyValueCollection, "age", "29");
+    code = KeyValuePairCollection_set(keyValueCollection, "age", "29");
 
     assert(code == KEY_VALUE_COLLECTION_SUCCESS);
 
-    kv = KeyValueCollection_get(keyValueCollection, "age");
+    kv = KeyValuePairCollection_get(keyValueCollection, "age");
 
     assert(kv != NULL);
     assert(strncmp(kv->value, "29", 100) == 0);
 
-    kv = KeyValueCollection_get(keyValueCollection, "nonexistent");
+    kv = KeyValuePairCollection_get(keyValueCollection, "nonexistent");
 
     assert(kv == NULL);
 
-    code = KeyValueCollection_set(keyValueCollection, "name", "Not Caitlyn");
+    code = KeyValuePairCollection_set(keyValueCollection, "name", "Not Caitlyn");
 
     assert(code == KEY_VALUE_COLLECTION_SUCCESS);
 
-    kv = KeyValueCollection_get(keyValueCollection, "name");
+    kv = KeyValuePairCollection_get(keyValueCollection, "name");
 
     assert(kv != NULL);
     assert(strncmp(kv->value, "Not Caitlyn", 100) == 0);
 
-    KeyValueCollection_free(keyValueCollection);
+    KeyValuePairCollection_free(keyValueCollection);
 
     puts("KeyValueCollection tests passed successfully!");
 

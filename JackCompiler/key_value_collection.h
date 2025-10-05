@@ -4,12 +4,12 @@
 #include "dynamic_array.h"
 
 struct KeyValueCollection {
-    struct DynamicArray* attributes;
+    struct DynamicArray* items;
 };
 
-struct KeyValue {
-    char* name;
-    char* value;
+struct KeyValuePair {
+    struct DynamicString *key;
+    struct DynamicString *value;
 };
 
 enum KeyValueCollectionErrorCode {
@@ -17,12 +17,12 @@ enum KeyValueCollectionErrorCode {
     KEY_VALUE_COLLECTION_ERROR_MEMORY_ALLOCATION = 1
 };
 
-struct KeyValue* KeyValue_new();
-void KeyValue_free(struct KeyValue* self);
+struct KeyValuePair* KeyValue_new();
+void KeyValue_free(struct KeyValuePair* self);
 
-struct KeyValueCollection* KeyValueCollection_new();
-void KeyValueCollection_free(struct KeyValueCollection* self);
-struct KeyValue* KeyValueCollection_get(struct KeyValueCollection* self, char* name);
-enum KeyValueCollectionErrorCode KeyValueCollection_set(struct KeyValueCollection* self, char* name, char* value);
+struct KeyValueCollection* KeyValuePairCollection_new();
+void KeyValuePairCollection_free(struct KeyValueCollection* self);
+struct KeyValuePair* KeyValuePairCollection_get(struct KeyValueCollection* self, char* name);
+enum KeyValueCollectionErrorCode KeyValuePairCollection_set(struct KeyValueCollection* self, char* name, char* value);
 
 #endif // KEY_VALUE_COLLECTION_H

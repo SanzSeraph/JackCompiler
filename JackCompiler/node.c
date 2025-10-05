@@ -111,7 +111,7 @@ enum NodeReturnCodes ElementNode_setAttribute(struct ElementNode* self, char* na
     enum NodeReturnCodes code = NODE_SUCCESS;
 
     if (self->attributes == NULL) {
-        self->attributes = KeyValueCollection_new();
+        self->attributes = KeyValuePairCollection_new();
 
         if (self->attributes == NULL) {
             code = NODE_ERROR_MEMORY_ALLOCATION;
@@ -119,7 +119,7 @@ enum NodeReturnCodes ElementNode_setAttribute(struct ElementNode* self, char* na
         }
     }
 
-    enum KeyValueCollectionErrorCode innerCode = KeyValueCollection_set(self->attributes, name, value);
+    enum KeyValueCollectionErrorCode innerCode = KeyValuePairCollection_set(self->attributes, name, value);
 
     if (innerCode == KEY_VALUE_COLLECTION_ERROR_MEMORY_ALLOCATION) {
         code = NODE_ERROR_MEMORY_ALLOCATION;
@@ -130,11 +130,11 @@ ret:
     return code;
 }
 
-struct KeyValue* ElementNode_getAttribute(struct ElementNode* self, char* name) {
-    struct KeyValue* attribute = NULL;
+struct KeyValuePair* ElementNode_getAttribute(struct ElementNode* self, char* name) {
+    struct KeyValuePair* attribute = NULL;
 
     if (self->attributes != NULL) {
-        attribute = KeyValueCollection_get(self->attributes, name);
+        attribute = KeyValuePairCollection_get(self->attributes, name);
     }
 
     return attribute;

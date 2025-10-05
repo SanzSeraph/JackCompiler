@@ -71,7 +71,7 @@ struct ParseResult parseXml(char* path)
 
     consumeWhitespace(parseContext);
 
-    struct KeyValueCollection* namespaces = KeyValueCollection_new();
+    struct KeyValueCollection* namespaces = KeyValuePairCollection_new();
     char currentChar;
 
     while ((currentChar = fgetc(file)) != EOF) {
@@ -256,17 +256,14 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
 
     char currentChar;
 	short currentValueIndex = 0;
-    struct DynamicArray* namespace = DynamicArray_new(16);
-	struct DynamicArray* key = DynamicArray_new(64);
-	struct DynamicArray* value = DynamicArray_new(64);
-    struct KeyValueCollection *attributes = KeyValueCollection_new();
+    struct KeyValueCollection *attributes = KeyValuePairCollection_new();
     struct Attribute* attribute;
-	struct KeyValue* kvp = KeyValue
+    struct KeyValuePair* kvp = KeyValue_new();
     bool namespaceFound = false;
     bool inKey = false;
     bool inValue = false;
 
-    while ((currentChar = fgetc(parseContext->file)) != EOF && currentChar != '>') {
+    while ((currentChar = fgetc(parseContext->file)) != EOF && (currentChar != '>' || currentChar == '>' && inValue)) {
         if (currentChar == '\n') {
             parseContext->currentLine++;
             parseContext->currentColumn = 0;
@@ -278,8 +275,8 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
         if (inKey) {
             if (currentChar == '=' || isWhitespace(currentChar)) {
                 inKey = false;
-                DynamicArray_add(key, '\0');
-                kvp->name = DynamicArray_toString(key);
+                DynamicString_add(attribute->keyValue.key, '\0');
+                kvp->key = key->array;
             } else if (currentChar == ':') {
                 if (namespaceFound) {
                     result.code = PARSE_XML_MULTIPLE_NAMESPACES_NOT_SUPPORTED;
@@ -287,9 +284,9 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
                     goto ret;
                 } else {
                     namespaceFound = true;
-                    attribute->ns = DynamicArray_toString(namespace);
-                    DynamicArray_free(key);
-					key = DynamicArray_new(64);
+                    attribute->ns = key->array;
+                    DynamicString_free(key);
+					key = DynamicString_new(64);
 				}
             }
             else if (!isLegalElementSubsequentCharacter(currentChar)) {
@@ -299,13 +296,22 @@ struct ParseResult parseAttributes(struct ParseContext *parseContext)
                 goto ret;
             }
             else {
-				char* boxedChar = malloc(1);
-                *boxedChar = currentChar;
-                DynamicArray_add(key, boxedChar);
+				DynamicString_add(key, currentChar);
             }
         }
         else if (inValue) {
             
+        }
+        else if (!isWhitespace(currentChar)) {
+            if (!isLegalAttributeFirstCharacter(currentChar)) {
+                result.code = PARSE_XML_INVALID_TAG_CHARACTER;
+                snprintf(result.message, sizeof(ILLEGAL_FIRST_CHARACTER_MESSAGE), ILLEGAL_FIRST_CHARACTER_MESSAGE, currentChar, parseContext->currentLine, parseContext->currentColumn);
+                
+                goto ret;
+            }
+            inKey = true;
+
+			DynamicString_add(key, currentChar);
         }
     }
 

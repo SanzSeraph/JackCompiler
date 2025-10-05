@@ -43,7 +43,7 @@ enum NodeReturnCodes Node_addChild(struct Node* self, struct Node* child);
 struct ElementNode* ElementNode_new(char* ns, char* nodeName);
 void ElementNode_free(struct ElementNode* self);
 enum NodeReturnCodes ElementNode_setAttribute(struct ElementNode* self, char* name, char* value);
-struct KeyValue* ElementNode_getAttribute(struct ElementNode* self, char* name);
+struct KeyValuePair* ElementNode_getAttribute(struct ElementNode* self, char* name);
 
 struct TextNode* TextNode_new(char* value);
 void TextNode_free(struct TextNode* self);
